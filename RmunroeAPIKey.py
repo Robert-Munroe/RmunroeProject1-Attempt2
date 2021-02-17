@@ -1,5 +1,18 @@
-import Secrets
 import requests
+import sqlite3
+from typing import Tuple
+import Secrets
+
+
+def open_db(filename: str) -> Tuple[sqlite3.Connection, sqlite3.Cursor]:
+    db_connection = sqlite3.connect(filename)                           #connect to existing DB or create new one
+    cursor = db_connection.cursor()                                     #get ready to read/write data
+    return db_connection, cursor
+
+
+def close_db(connection: sqlite3.Connection):
+    connection.commit()                                                 #make sure any changes get saved
+    connection.close()
 
 
 def get_data():
@@ -21,6 +34,11 @@ def get_data():
 
 
 def main():
+
+    conn, cursor = open_db("demo_db.sqlite")
+    print(type(conn))
+    close_db(conn)
+
     f = open("School_Data.txt", "w")
     final_data = ' '.join([str(elem) for elem in get_data()])
     f.write(final_data)
