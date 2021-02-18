@@ -1,20 +1,31 @@
 import requests
 import Secrets
 import sqlite3
+from typing import Tuple
 
 
-def generate_school_database():
-    conn = sqlite3.connect('Schools_Database.db')
+def open_db(filename: str) -> Tuple[sqlite3.Connection, sqlite3.Cursor]:
+    db_connection = sqlite3.connect(filename)  # connect to existing DB or create new one
+    cursor = db_connection.cursor()  # get ready to read/write data
+    return db_connection, cursor
 
-    c = conn.cursor()
 
-    c.execute("""CREATE TABLE school (
-                School_Data blop
-                )""")
+def close_db(connection: sqlite3.Connection):
+    connection.commit()  # make sure any changes get saved
+    connection.close()
 
-    conn.commit()
 
-    conn.close()
+def setup_db(cursor: sqlite3.Cursor):
+    cursor.execute('''CREATE TABLE IF NOT EXISTS Schools_Database(
+    school_data TEXT NOT NULL
+    );''')
+
+
+def insert_data(cursor: sqlite3.Cursor,conn: sqlite3.Connection, data):
+    for i in range(len(data)):
+        school_data = data[i]
+        cursor.execute("INSERT INTO Schools_Database VALUES (:school", {'school': school_data})
+        conn.close
 
 
 def get_data():
@@ -36,21 +47,20 @@ def get_data():
 
 
 def main():
-    try:
-        generate_school_database()
-    except Exception:
-        pass
+    conn, cursor = open_db("Schools_Database.sqlite")
+    print(type(conn))
 
-    print(get_data())
+    setup_db(cursor)
+    insert_data(cursor,conn, get_data())
+    close_db(conn)
+#    f = open("School_Data.txt", "w")
+#    final_data = ' '.join([str(elem) for elem in get_data()])
+#    f.write(final_data)
 
-    f = open("School_Data.txt", "w")
-    final_data = ' '.join([str(elem) for elem in get_data()])
-    f.write(final_data)
-
-    f.close()
-    f = open("School_Data.txt", "r")
-    print(f.read())
-    f.close()
+#    f.close()
+#    f = open("School_Data.txt", "r")
+#    print(f.read())
+#    f.close()
 
 
 if __name__ == '__main__':
