@@ -1,24 +1,26 @@
 import requests
-import sqlite3
-from typing import Tuple
 import Secrets
+import sqlite3
 
 
-def open_db(filename: str) -> Tuple[sqlite3.Connection, sqlite3.Cursor]:
-    db_connection = sqlite3.connect(filename)                           #connect to existing DB or create new one
-    cursor = db_connection.cursor()                                     #get ready to read/write data
-    return db_connection, cursor
+def generate_school_database():
+    conn = sqlite3.connect('Schools_Database.db')
 
+    c = conn.cursor()
 
-def close_db(connection: sqlite3.Connection):
-    connection.commit()                                                 #make sure any changes get saved
-    connection.close()
+    c.execute("""CREATE TABLE school (
+                School_Data blop
+                )""")
+
+    conn.commit()
+
+    conn.close()
 
 
 def get_data():
     all_data = []
 
-    for page in range(5):
+    for page in range(1):
         response = requests.get(f"https://api.data.gov/ed/collegescorecard/v1/schools.json?school.degrees_"
                                 f"awarded.predominant=2,3"
                                 f"&fields=school.name,school.city,school.state,2018.student.size,2017.student.size,"
@@ -34,10 +36,12 @@ def get_data():
 
 
 def main():
+    try:
+        generate_school_database()
+    except Exception:
+        pass
 
-    conn, cursor = open_db("demo_db.sqlite")
-    print(type(conn))
-    close_db(conn)
+    print(get_data())
 
     f = open("School_Data.txt", "w")
     final_data = ' '.join([str(elem) for elem in get_data()])
