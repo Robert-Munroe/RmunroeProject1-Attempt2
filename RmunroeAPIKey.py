@@ -22,23 +22,25 @@ def setup_db(cursor: sqlite3.Cursor):
 
 
 def insert_data(cursor: sqlite3.Cursor, data):
+
     for i in range(len(data)):
         school_data = data[i]
-        school_data = list_to_string(school_data)
+        school_data = str(school_data)
         cursor.execute("INSERT INTO Schools_Database VALUES (:school_data)", {'school_data': school_data})
 
 
-def list_to_string(string):
-    str1 = ""
-    for ele in string:
-        str1 += ele
-    return str1
+def select_data(cursor: sqlite3.Cursor, data):
+    for i in range(len(data)):
+        school_data = data[i]
+        school_data = str(school_data)
+        cursor.execute("SELECT * from Schools_Database WHERE school_data=:school_data", {'school_data': school_data})
+    return cursor.fetchall()
 
 
 def get_data():
     all_data = []
 
-    for page in range(150):
+    for page in range(5):
         response = requests.get(f"https://api.data.gov/ed/collegescorecard/v1/schools.json?school.degrees_"
                                 f"awarded.predominant=2,3"
                                 f"&fields=school.name,school.city,school.state,2018.student.size,2017.student.size,"
@@ -54,12 +56,21 @@ def get_data():
 
 
 def main():
+    bad_chars= ['(', "'", "{", "}", ")"]
 
+    data = get_data()
+    for i in bad_chars:
+        data = data.replace()
+
+    print(data)
     conn, cursor = open_db("Schools_Database.sqlite")
     print(type(conn))
-
     setup_db(cursor)
-    insert_data(cursor, get_data())
+
+    insert_data(cursor, data)
+
+    data_in_table = select_data(cursor, data)
+    print(data_in_table)
     close_db(conn)
 
 
