@@ -22,17 +22,20 @@ def setup_db(cursor: sqlite3.Cursor):
 
 
 def insert_data(cursor: sqlite3.Cursor, data):
-
+    bad_chars = ['(', "'", "{", "}", ")"]
     for i in range(len(data)):
         school_data = data[i]
         school_data = str(school_data)
+        school_data = ''.join(i for i in school_data if not i in bad_chars)
         cursor.execute("INSERT INTO Schools_Database VALUES (:school_data)", {'school_data': school_data})
 
 
 def select_data(cursor: sqlite3.Cursor, data):
+    bad_chars = ['(', "'", "{", "}", ")"]
     for i in range(len(data)):
         school_data = data[i]
         school_data = str(school_data)
+        school_data = ''.join(i for i in school_data if not i in bad_chars)
         cursor.execute("SELECT * from Schools_Database WHERE school_data=:school_data", {'school_data': school_data})
     return cursor.fetchall()
 
@@ -56,11 +59,7 @@ def get_data():
 
 
 def main():
-    bad_chars= ['(', "'", "{", "}", ")"]
-
     data = get_data()
-    for i in bad_chars:
-        data = data.replace()
 
     print(data)
     conn, cursor = open_db("Schools_Database.sqlite")
