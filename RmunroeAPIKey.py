@@ -17,15 +17,22 @@ def close_db(connection: sqlite3.Connection):
 
 def setup_db(cursor: sqlite3.Cursor):
     cursor.execute('''CREATE TABLE IF NOT EXISTS Schools_Database(
-    school_data TEXT NOT NULL
+    school_data BLOB
     );''')
 
 
-def insert_data(cursor: sqlite3.Cursor,conn: sqlite3.Connection, data):
+def insert_data(cursor: sqlite3.Cursor, data):
     for i in range(len(data)):
         school_data = data[i]
-        cursor.execute("INSERT INTO Schools_Database VALUES (:school", {'school': school_data})
-        conn.close
+        school_data = list_to_string(school_data)
+        cursor.execute("INSERT INTO Schools_Database VALUES (:school_data)", {'school_data': school_data})
+
+
+def list_to_string(string):
+    str1 = ""
+    for ele in string:
+        str1 += ele
+    return str1
 
 
 def get_data():
@@ -47,20 +54,13 @@ def get_data():
 
 
 def main():
+
     conn, cursor = open_db("Schools_Database.sqlite")
     print(type(conn))
 
     setup_db(cursor)
-    insert_data(cursor,conn, get_data())
+    insert_data(cursor, get_data())
     close_db(conn)
-#    f = open("School_Data.txt", "w")
-#    final_data = ' '.join([str(elem) for elem in get_data()])
-#    f.write(final_data)
-
-#    f.close()
-#    f = open("School_Data.txt", "r")
-#    print(f.read())
-#    f.close()
 
 
 if __name__ == '__main__':
