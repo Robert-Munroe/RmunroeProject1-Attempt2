@@ -18,5 +18,3 @@ def test_pop_database():
     RmunroeAPIKey.close_db(conn)
 
     assert data_in_table == data
-
-

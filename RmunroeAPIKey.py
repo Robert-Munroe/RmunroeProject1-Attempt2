@@ -16,60 +16,63 @@ def close_db(connection: sqlite3.Connection):
 
 
 def setup_db(cursor: sqlite3.Cursor):
-    cursor.execute('''CREATE TABLE IF NOT EXISTS Schools_Database(
-    school_data BLOB
-    );''')
+    cursor.execute('''CREATE TABLE university_data(
+    school_id INTEGER PRIMARY KEY,
+    university_name TEXT NOT NULL,
+    university_state TEXT NOT NULL,
+    university_city TEXT NOT NULL,
+    student_2018 INT,
+    student_2017 INT,
+    three_year_earnings_over_poverty INT,
+    loan_repayment INT);''')
 
 
-def insert_data(cursor: sqlite3.Cursor, data):
-    bad_chars = ['(', "'", "{", "}", ")"]
-    for i in range(len(data)):
-        school_data = data[i]
-        school_data = str(school_data)
-        school_data = ''.join(i for i in school_data if not i in bad_chars)
-        cursor.execute("INSERT INTO Schools_Database VALUES (:school_data)", {'school_data': school_data})
-
-
-def select_data(cursor: sqlite3.Cursor, data):
-    bad_chars = ['(', "'", "{", "}", ")"]
-    for i in range(len(data)):
-        school_data = data[i]
-        school_data = str(school_data)
-        school_data = ''.join(i for i in school_data if not i in bad_chars)
-        cursor.execute("SELECT * from Schools_Database WHERE school_data=:school_data", {'school_data': school_data})
-    return cursor.fetchall()
+def insert_data(all_data, cursor):
+    for univ_data in all_data:
+        cursor.execute("""
+        INSERT INTO university_data(school_id, university_name, student_2018, student_2017, university_state, 
+        three_year_earnings_over_poverty, loan_repayment)
+         VALUES (?,?,?,?,?,?);
+        """, (univ_data['id'], univ_data['school.name'], univ_data['2018.student.size'], univ_data['school.state'],
+              univ_data['2017.earnings.3_yrs_after_completion.overall_count_over_poverty_line'],
+              univ_data['2016.repayment.3_yr_repayment.overall']))
 
 
 def get_data():
     all_data = []
-
-    for page in range(5):
-        response = requests.get(f"https://api.data.gov/ed/collegescorecard/v1/schools.json?school.degrees_"
-                                f"awarded.predominant=2,3"
-                                f"&fields=school.name,school.city,school.state,2018.student.size,2017.student.size,"
-                                f"2017.earnings.3_yrs_after_completion.overall_count_over_poverty_line,"
-                                f"2016.repayment.3_yr_repayment.overall&api_key={Secrets.api_key}&page={page}")
+    response = requests.get(f'https://api.data.gov/ed/collegescorecard/v1/schools.json?'
+                            f'school.degrees_awarded.predominant=2,3&fields=id,'
+                            f'school.state,school.name,2018.student.size,2016.repayment.3_yr_repayment.overall,'
+                            f'2017.earnings.3_yrs_after_completion.overall_count_over_poverty_line'
+                            f'&api_key={Secrets.api_key}')
+    first_page = response.json()
+    if response.status_code != 200:
+        print(F"Error getting data from API: {response.raw}")
+        return []
+    total_results = first_page['metadata']['total']
+    page = 0
+    per_page = first_page['metadata']['per_page']
+    all_data.extend(first_page['results'])
+    while (page+1)*per_page < total_results:
+        page += 1
+        response = requests.get(f'https://api.data.gov/ed/collegescorecard/v1/schools.json?'
+                                f'school.degrees_awarded.predominant=2,3&fields=id,school.state,'
+                                f'school.name,2018.student.size,2016.repayment.3_yr_repayment.overall,2017.'
+                                f'earnings.3_yrs_after_completion.overall_count_over_poverty_line'
+                                f'&api_key={Secrets.api_key}&page={page}')
         if response.status_code != 200:
-            print("error getting data!")
-            exit(-1)
-        page_of_data = response.json()
-        page_of_school_data = page_of_data['results']
-        all_data.extend(page_of_school_data)
+            continue
+        current_page = response.json()
+        all_data.extend(current_page['results'])
+
     return all_data
 
 
 def main():
-    data = get_data()
-
-    print(data)
+    all_data = get_data()
     conn, cursor = open_db("Schools_Database.sqlite")
-    print(type(conn))
     setup_db(cursor)
-
-    insert_data(cursor, data)
-
-    data_in_table = select_data(cursor, data)
-    print(data_in_table)
+    insert_data(all_data, cursor)
     close_db(conn)
 
 
