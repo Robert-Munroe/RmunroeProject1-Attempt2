@@ -29,25 +29,41 @@ def setup_db(cursor: sqlite3.Cursor):
 
 def setup_excel_db(cursor: sqlite3.Cursor):
     cursor.execute('''CREATE TABLE IF NOT EXISTS wage_and_job(
-    state TEXT
-    occupation_major_title TEXT
-    total_employment_in_field INT
-    25th_percentile_salary INT
-    occupation_code INT
-    );''')
+    state TEXT,
+    occupation_major_title TEXT,
+    total_employment_in_field INT,
+    _25th_percentile_salary INT,
+    occupation_code INT);''')
 
 
-def insert_data_excel(excel_data, cursor):
-    return
+def insert_data_excel(state, occupation_title, total_employment, _25th_percent, occupation_code, cursor):
+    # for i in range(len(state)):
+    #    cursor.execute("""
+    #    INSERT INTO wage_and_job(state, occupation_major_title, total_employment_in_field,
+    #     _25th_percentile_salary, occupation_code)
+    #     VALUES(?,?,?,?,?);
+    #     """, (state[i], occupation_title[i], total_employment[i], _25th_percent[i], occupation_code[i]))
+
+    for state_data in state:
+        cursor.execute("""INSERT INTO wage_and_job(state) VALUES(?);""", state_data)
+    for occupation_title_data in occupation_title:
+        cursor.execute("""INSERT INTO wage_and_job(occupation_major_title) VALUES(?);""", occupation_title_data)
+    for total_employment_data in total_employment:
+        cursor.execute("""INSERT INTO wage_and_job(total_employment_in_field) VALUES(?);""", total_employment_data)
+    for _25th_percent_data in _25th_percent:
+        cursor.execute("""INSERT INTO wage_and_job(_25th_percentile_salary) VALUES(?);""", _25th_percent_data)
+    for occupation_code_data in occupation_code:
+        cursor.execute("""INSERT INTO wage_and_job(occupation_code) VALUES(?);""", occupation_code_data)
 
 
 def insert_data(all_data, cursor):
     for univ_data in all_data:
         cursor.execute("""
-        INSERT INTO university_data(school_id, university_name, student_2018, university_state, 
-        three_year_earnings_over_poverty, loan_repayment)
+        INSERT INTO university_data(school_id, university_name, student_2018,
+         university_state, three_year_earnings_over_poverty, loan_repayment)
          VALUES (?,?,?,?,?,?);
-        """, (univ_data['id'], univ_data['school.name'], univ_data['2018.student.size'], univ_data['school.state'],
+        """, (univ_data['id'], univ_data['school.name'], univ_data['2018.student.size'],
+              univ_data['school.state'],
               univ_data['2017.earnings.3_yrs_after_completion.overall_count_over_poverty_line'],
               univ_data['2016.repayment.3_yr_repayment.overall']))
 
@@ -78,11 +94,10 @@ def get_data_excel(row_count):
 
 def get_data():
     all_data = []
-    response = requests.get(f'https://api.data.gov/ed/collegescorecard/v1/schools.json?'
-                            f'school.degrees_awarded.predominant=2,3&fields=id,school.state,school.name,'
-                            f'2018.student.size,2016.repayment.3_yr_repayment.overall,'
-                            f'2017.earnings.3_yrs_after_completion.overall_count_over_poverty_line'
-                            f'&api_key={Secrets.api_key}')
+    response = requests.get(f'https://api.data.gov/ed/collegescorecard/v1/schools.json?school.degrees_awarded.'
+                            f'predominant=2,3&fields=id,school.state,school.name,2018.student.size,2016.repayment.3_yr_'
+                            f'repayment.overall,2017.earnings.3_yrs_after_completion.overall_count_over_poverty_line&'
+                            f'api_key={Secrets.api_key}')
     first_page = response.json()
     if response.status_code != 200:
         print(F"Error getting data from API: {response.raw}")
@@ -108,11 +123,14 @@ def get_data():
 
 def main():
     row_count = 36383  # total number of rows in excel
-    # all_data = get_data()
-    # conn, cursor = open_db("Schools_Database.sqlite")
-    # setup_db(cursor)
-    # insert_data(all_data, cursor)
-    # close_db(conn)
+    all_data = get_data()
+    conn, cursor = open_db("Schools_Database.sqlite")
+    setup_db(cursor)
+    insert_data(all_data, cursor)
+    close_db(conn)
+
+    conn, cursor = open_db("work_jobs")
+    setup_excel_db(cursor)
     excel_state = []
     excel_occupation_title = []
     excel_total_employment = []
@@ -120,7 +138,12 @@ def main():
     excel_occupation_code = []
     excel_state, excel_occupation_title, excel_total_employment, excel_25th_percent, excel_occupation_code =\
         get_data_excel(row_count)
-    print(excel_total_employment)
+
+    insert_data_excel(excel_state, excel_occupation_title, excel_total_employment,
+                      excel_25th_percent, excel_occupation_code, cursor)
+    close_db(conn)
+
+    print("Data has been uploaded")
 
 
 if __name__ == '__main__':
