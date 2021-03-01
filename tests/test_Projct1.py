@@ -26,3 +26,31 @@ def test_data_save():
     results = cursor.fetchall()
     test_record = results[0]
     assert test_record[0] == 'Test University'
+
+
+def test_get_excel():
+    row_count = 36383
+    list_of_states = ['Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut', 'Delaware',
+                      'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Louisiana',
+                      'Maine', 'Maryland', 'Massachusetts', 'Michigan', 'Minnesota', 'Mississippi', 'Missouri',
+                      'Montana', 'Nebraska', 'Nevada', 'New Hampshire', ' New Jersey', 'New Mexico', 'New York',
+                      'North Carolina', 'North Dakota', 'Ohio', 'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode Island',
+                      'South Carolina', 'South Dakota', 'Tennessee', 'Texas', 'Utah', 'Vermont', 'Virginia',
+                      'Washington', 'West Virginia', 'Wisconsin', 'Wyoming']
+
+    excel_state = []
+    excel_occupation_title = []
+    excel_total_employment = []
+    excel_25th_percent = []
+    excel_occupation_code = []
+    excel_state, excel_occupation_title, excel_total_employment, excel_25th_percent, excel_occupation_code = \
+        RmunroeAPIKey.get_data_excel(row_count)
+
+    excel_state_stripped = []
+    [excel_state_stripped.append(x) for x in excel_state if x not in excel_state_stripped]
+    print(excel_state_stripped)
+
+    all_states_found = False
+    if excel_state_stripped == list_of_states:
+        all_states_found = True
+    assert all_states_found == True
